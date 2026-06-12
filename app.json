@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "kings-cup-52",
-    "slug": "kings-cup-52",
+    "name": "솜솜이 킹스컵",
+    "slug": "somsom-kings-cup",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -10,19 +10,29 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#FFF9F0"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": false
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      }
+        "backgroundColor": "#FFF9F0"
+      },
+      "package": "com.somsom.kingscup"
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "6d316d11-ca41-4840-87ce-c75954db92b1"
+      }
+    },
+    "owner": "logan_mskim",
+    "plugins": [
+      "expo-asset"
+    ]
   }
 }
