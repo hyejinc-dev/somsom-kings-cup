@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#FF6B9D">
+<title>솜솜이 킹스컵 🍺</title>
+<link rel="icon" href="assets/somsom7.jpg">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Segoe UI', Roboto, sans-serif;
+    background: #FFF9F0; overflow: hidden;
+    user-select: none; -webkit-user-select: none;
+  }
+  #app { height: 100%; max-width: 480px; margin: 0 auto; display: flex; flex-direction: column; position: relative; }
+  button { font-family: inherit; border: none; background: none; cursor: pointer; }
+  .hidden { display: none !important; }
+
+  /* ═══ 설정 화면 ═══ */
+  #setup {
+    flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center;
+    padding: 24px; gap: 20px; overflow-y: auto;
+  }
+  #setup .title-box { display: flex; flex-direction: column; align-items: center; }
+  #setup .title-box img { width: 160px; height: 160px; border-radius: 50%; object-fit: cover; }
+  #setup h1 { font-size: 34px; font-weight: 900; color: #FF6B9D; margin-top: 10px; }
+  #setup .sub { font-size: 15px; color: #aaa; margin-top: 6px; }
+  .input-row { display: flex; gap: 10px; align-items: center; }
+  #name-input {
+    width: min(60vw, 280px); background: #fff; border-radius: 14px; padding: 13px 16px;
+    font-size: 16px; border: 2px solid #E0E0E0; outline: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+  }
+  #name-input:focus { border-color: #FF6B9D; }
+  #add-btn { background: #FF6B9D; border-radius: 14px; padding: 13px 18px; color: #fff; font-weight: 800; font-size: 15px; }
+  #player-list { width: 100%; max-width: 360px; display: flex; flex-direction: column; gap: 8px; }
+  .player-chip {
+    display: flex; align-items: center; gap: 12px;
+    background: #fff; border-radius: 14px; padding: 12px 16px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+  }
+  .player-chip .num {
+    width: 28px; height: 28px; border-radius: 50%; background: #FF6B9D; color: #fff;
+    font-weight: 900; font-size: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .player-chip .name { flex: 1; font-size: 16px; font-weight: 700; color: #333; }
+  .player-chip .remove { color: #aaa; font-size: 16px; padding: 4px; }
+  .hint { text-align: center; color: #ccc; font-size: 13px; }
+  #start-btn {
+    background: #FF6B9D; border-radius: 18px; padding: 18px 48px; margin-top: 8px;
+    color: #fff; font-size: 20px; font-weight: 900;
+    box-shadow: 0 6px 12px rgba(255,107,157,0.4);
+    transition: opacity 0.2s;
+  }
+  #start-btn:disabled { opacity: 0.4; cursor: default; }
+
+  /* ═══ 게임 화면 ═══ */
+  #game { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 13px 20px; background: #FF6B9D;
+    border-radius: 0 0 22px 22px;
+    box-shadow: 0 5px 10px rgba(255,107,157,0.3);
+  }
+  header h2 { font-size: 20px; font-weight: 900; color: #fff; }
+  #rules-btn {
+    background: rgba(255,255,255,0.2); padding: 7px 13px; border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.5); color: #fff; font-weight: 700; font-size: 13px;
+  }
+  .turn-banner {
+    margin: 10px 16px 0; background: #fff; border-radius: 16px; padding: 10px 16px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.07); text-align: center;
+  }
+  .turn-banner .label { font-size: 11px; color: #aaa; margin-bottom: 2px; }
+  .turn-banner .name { font-size: 20px; font-weight: 900; color: #FF6B9D; }
+  .turn-banner .order { font-size: 11px; margin-top: 4px; }
+  .turn-banner .order .active { color: #FF6B9D; font-weight: 900; }
+  .turn-banner .order .inactive { color: #ccc; }
+  .stats-row {
+    display: flex; margin: 8px 16px 0; background: #fff; border-radius: 16px; padding: 10px 0;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+  }
+  .stat { flex: 1; display: flex; flex-direction: column; align-items: center; }
+  .stat .num { font-size: 22px; font-weight: 900; }
+  .stat .label { font-size: 10px; color: #bbb; margin-top: 1px; }
+  .stat-divider { width: 1px; background: #F0F0F0; margin: 4px 0; }
+  #kings-icons { font-size: 17px; letter-spacing: 3px; }
+
+  .deck-row {
+    flex: 1; display: flex; align-items: center; justify-content: space-evenly;
+    padding: 4px 8px 0; min-height: 0;
+  }
+  .deck-col { display: flex; flex-direction: column; align-items: center; }
+  .col-label { font-size: 11px; color: #bbb; margin-bottom: 6px; font-weight: 600; }
+  .col-hint { font-size: 10px; color: #ccc; margin-top: 5px; height: 12px; }
+  .vertical-divider { width: 1px; background: #E8E8E8; align-self: center; }
+
+  #deck-area { position: relative; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .card-back {
+    position: absolute; background: #FF6B9D; border-radius: 14px; border: 2.5px solid #C44569;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 2px 4px 6px rgba(196,69,105,0.4);
+  }
+  .card-back .inner {
+    border-radius: 10px; border: 1.5px solid rgba(255,255,255,0.5);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .card-back .paw { line-height: 1; }
+  .card-back .suits { color: rgba(255,255,255,0.7); margin-top: 6px; font-weight: 700; letter-spacing: 3px; }
+  #deck-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+
+  .card-face {
+    position: relative; border-radius: 14px; overflow: hidden; background: #fff;
+    display: block;
+  }
+  .card-face img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .card-face .corner {
+    position: absolute; background: rgba(255,255,255,0.88); border-radius: 7px;
+    padding: 2px 5px; display: flex; flex-direction: column; align-items: center; line-height: 1.15;
+  }
+  .card-face .corner.tl { top: 6px; left: 7px; }
+  .card-face .corner.br { bottom: 6px; right: 7px; transform: rotate(180deg); }
+  #empty-card {
+    border-radius: 14px; border: 2px dashed #E8E8E8; background: #FAFAFA;
+    display: flex; align-items: center; justify-content: center; font-size: 32px; opacity: 0.6;
+  }
+  #last-card-area { cursor: pointer; }
+
+  .btn-row { display: flex; gap: 10px; padding: 6px 16px 16px; }
+  #draw-btn {
+    flex: 1; background: #FF6B9D; border-radius: 18px; padding: 16px;
+    color: #fff; font-size: 17px; font-weight: 900;
+    box-shadow: 0 5px 10px rgba(255,107,157,0.4);
+  }
+  #draw-btn:disabled { background: #ccc; box-shadow: none; cursor: default; }
+  #reset-btn {
+    background: #fff; border-radius: 18px; padding: 16px 18px;
+    border: 2px solid #FF6B6B; font-size: 20px;
+  }
+
+  /* ═══ 모달 공통 ═══ */
+  .overlay {
+    position: fixed; inset: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #card-modal.overlay { background: rgba(0,0,0,0.75); }
+  #confirm-modal.overlay { background: rgba(0,0,0,0.55); }
+  #rules-modal.overlay { background: rgba(0,0,0,0.45); align-items: flex-end; }
+
+  /* 카드 결과 모달 */
+  .modal-box {
+    width: min(calc(100vw - 40px), 360px); background: #fff; border-radius: 28px; overflow: hidden;
+    box-shadow: 0 20px 30px rgba(0,0,0,0.4);
+    transform: scale(0);
+  }
+  .modal-box.pop { animation: pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+  @keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
+  .modal-card-area { padding: 24px 0; display: flex; justify-content: center; border-bottom: 3px solid; }
+  .modal-body { padding: 18px 22px 0; }
+  .modal-title { font-size: 21px; font-weight: 900; text-align: center; margin-bottom: 10px; }
+  .modal-rule { font-size: 15px; color: #333; line-height: 1.55; text-align: center; margin-bottom: 12px; }
+  .tip-box { border-radius: 12px; padding: 11px; border-left: 4px solid; }
+  .tip-box p { font-size: 13px; line-height: 1.55; font-weight: 600; }
+  .king-badge { border-radius: 12px; padding: 12px; margin-top: 10px; text-align: center; color: #fff; font-weight: 900; font-size: 15px; }
+  .modal-footer { padding: 14px 20px 18px; }
+  #confirm-card-btn { width: 100%; padding: 15px; border-radius: 16px; color: #fff; font-weight: 900; font-size: 17px; }
+  .tap-hint { text-align: center; color: #ccc; font-size: 11px; margin-top: 8px; }
+
+  /* 새 게임 확인 모달 */
+  .confirm-box {
+    width: min(calc(100vw - 60px), 300px); background: #fff; border-radius: 28px; padding: 28px;
+    display: flex; flex-direction: column; align-items: center;
+    box-shadow: 0 12px 24px rgba(0,0,0,0.25);
+  }
+  .confirm-box .emoji { font-size: 52px; margin-bottom: 12px; }
+  .confirm-box h3 { font-size: 20px; font-weight: 900; color: #333; margin-bottom: 8px; }
+  .confirm-box p { font-size: 14px; color: #888; text-align: center; line-height: 1.55; margin-bottom: 24px; }
+  .confirm-btn-row { display: flex; gap: 10px; width: 100%; }
+  #cancel-reset { flex: 1; padding: 14px; border-radius: 14px; border: 2px solid #E0E0E0; font-weight: 700; color: #666; font-size: 15px; }
+  #ok-reset { flex: 1; padding: 14px; border-radius: 14px; background: #FF6B6B; font-weight: 900; color: #fff; font-size: 15px; }
+
+  /* 룰북 시트 */
+  .rules-sheet {
+    width: 100%; max-width: 480px; max-height: 85vh; background: #fff;
+    border-radius: 28px 28px 0 0; display: flex; flex-direction: column;
+    animation: slide-up 0.3s ease-out;
+  }
+  @keyframes slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .rules-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 20px; border-bottom: 1px solid #F0F0F0;
+  }
+  .rules-header h3 { font-size: 19px; font-weight: 900; color: #FF6B9D; }
+  #rules-close { background: #F5F5F5; border-radius: 50%; width: 32px; height: 32px; font-size: 16px; color: #666; }
+  .rules-scroll { overflow-y: auto; padding-bottom: 20px; }
+  .rule-row {
+    display: flex; align-items: center; gap: 14px;
+    padding: 13px 20px; border-bottom: 1px solid #F7F7F7;
+  }
+  .rule-badge {
+    width: 46px; height: 46px; border-radius: 13px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 17px; font-weight: 900;
+  }
+  .rule-row .title { font-size: 14px; font-weight: 800; color: #333; margin-bottom: 3px; }
+  .rule-row .body { font-size: 12px; color: #999; line-height: 1.4; }
+
+  @media (max-height: 680px) {
+    #setup .title-box img { width: 120px; height: 120px; }
+    header { padding: 8px 20px; }
+    header h2 { font-size: 18px; }
+    .btn-row { padding-bottom: 12px; }
+    #draw-btn, #reset-btn { padding-top: 12px; padding-bottom: 12px; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ═══ 플레이어 설정 화면 ═══ -->
+  <div id="setup">
+    <div class="title-box">
+      <img src="assets/somsom7.jpg" alt="솜솜이">
+      <h1>솜솜이 킹스컵 🍺</h1>
+      <p class="sub">플레이어 이름을 입력해 주세요</p>
+    </div>
+    <div class="input-row">
+      <input id="name-input" type="text" placeholder="이름 입력..." maxlength="10" autocomplete="off">
+      <button id="add-btn">추가</button>
+    </div>
+    <div id="player-list"></div>
+    <button id="start-btn" disabled>게임 시작! 🎉</button>
+  </div>
+
+  <!-- ═══ 게임 화면 ═══ -->
+  <div id="game" class="hidden">
+    <header>
+      <h2>🐱 솜솜이 킹스컵</h2>
+      <button id="rules-btn">룰북 📋</button>
+    </header>
+
+    <div class="turn-banner">
+      <div class="label">지금 차례</div>
+      <div class="name" id="turn-name"></div>
+      <div class="order" id="turn-order"></div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat">
+        <div class="num" style="color:#FF6B9D" id="stat-remaining">52</div>
+        <div class="label">남은 카드</div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <div class="num" style="color:#E17055" id="stat-drawn">0</div>
+        <div class="label">뽑은 카드</div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <div class="num" id="kings-icons">🔲🔲🔲🔲</div>
+        <div class="label">킹스컵</div>
+      </div>
+    </div>
+
+    <div class="deck-row">
+      <div class="deck-col">
+        <div class="col-label">덱</div>
+        <div id="deck-area"></div>
+        <div class="col-hint" id="deck-hint">탭해서 뽑기 👆</div>
+      </div>
+      <div class="vertical-divider" id="v-divider"></div>
+      <div class="deck-col">
+        <div class="col-label">마지막 카드</div>
+        <div id="last-card-area"></div>
+        <div class="col-hint" id="last-hint"></div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button id="draw-btn"></button>
+      <button id="reset-btn">🔄</button>
+    </div>
+  </div>
+
+  <!-- ═══ 카드 결과 모달 ═══ -->
+  <div id="card-modal" class="overlay hidden">
+    <div class="modal-box" id="modal-box">
+      <div class="modal-card-area" id="modal-card-area"></div>
+      <div class="modal-body">
+        <div class="modal-title" id="modal-title"></div>
+        <div class="modal-rule" id="modal-rule"></div>
+        <div class="tip-box" id="modal-tip-box"><p id="modal-tip"></p></div>
+        <div class="king-badge hidden" id="king-badge"></div>
+      </div>
+      <div class="modal-footer">
+        <button id="confirm-card-btn">확인 👍</button>
+        <div class="tap-hint">화면 어디든 탭해도 닫혀요</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ 새 게임 확인 모달 ═══ -->
+  <div id="confirm-modal" class="overlay hidden">
+    <div class="confirm-box">
+      <div class="emoji">🔄</div>
+      <h3>새 게임 시작?</h3>
+      <p>플레이어 설정으로 돌아가요.<br>정말 새 게임 할까요?</p>
+      <div class="confirm-btn-row">
+        <button id="cancel-reset">취소</button>
+        <button id="ok-reset">새 게임!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ 룰북 시트 ═══ -->
+  <div id="rules-modal" class="overlay hidden">
+    <div class="rules-sheet">
+      <div class="rules-header">
+        <h3>🐾 킹스컵 룰북</h3>
+        <button id="rules-close">✕</button>
+      </div>
+      <div class="rules-scroll" id="rules-list"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+'use strict';
+
+/* ── 고양이 사진 8장 ── */
+const CAT_IMAGES = [1,2,3,4,5,6,7,8].map(n => `assets/somsom${n}.jpg`);
+
+const SUIT_ORDER = ['♠','♥','♦','♣'];
+const SUITS      = ['♠','♥','♦','♣'];
+const RANKS      = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+const RED_SUITS  = ['♥','♦'];
+
+const RULES = {
+  'A' : { title:'🍻 다같이 마셔라냥!',       color:'#E74C3C', bg:'#FFF0F0', rule:'솜솜이 명령이다냥~ 다 같이 마셔야 한다냥! 🐾',                                               tip:'예외 없다냥 😤' },
+  '2' : { title:'👉 지목이다냥!',            color:'#FF8C00', bg:'#FFF5E6', rule:'마실 사람 한 명 골라라냥~ 누구냥? 냥냥? 👀',                                                tip:'신중하게 고르라냥!' },
+  '3' : { title:'🙋 내가 마신다냥!',         color:'#E6B800', bg:'#FFFDE7', rule:'뽑은 사람이 직접 마셔야 한다냥~ 😿',                                                       tip:'자업자득이다냥 😂' },
+  '4' : { title:'👩 여자만 마셔라냥!',       color:'#E91E8C', bg:'#FFF0F8', rule:'여성분들만 마시는 시간이다냥~ 🎀',                                                          tip:'여자만 해당이다냥!' },
+  '5' : { title:'💀 게임 오브 데스다냥!',   color:'#27AE60', bg:'#F0FFF4', rule:'모두 두 명씩 지목하라냥! 지목받은 냥이들끼리 손가락 총 대결이다냥~ 진 냥이가 마신다냥! 🔫', tip:'빵! 각오하라냥 ☠️' },
+  '6' : { title:'👨 남자만 마셔라냥!',       color:'#2980B9', bg:'#EBF5FB', rule:'남성분들만 마시는 시간이다냥~ 🐾',                                                          tip:'남자만 해당이다냥!' },
+  '7' : { title:'☝️ Seven Heaven이다냥!',    color:'#8E44AD', bg:'#F5EEF8', rule:'하늘을 빨리 가리키라냥~! 가장 느린 냥이가 마신다냥! ⚡',                                  tip:'망설이면 마시는거다냥 😹' },
+  '8' : { title:'👫 짝꿍 정하라냥!',         color:'#D35400', bg:'#FEF0E7', rule:'짝꿍을 정하라냥~ 짝꿍이 마실 때마다 같이 마셔야 한다냥! 🐱',                              tip:'다음 카드까지 유지된다냥~' },
+  '9' : { title:'🔤 초성 게임이다냥!',       color:'#E74C3C', bg:'#FFF0F0', rule:'초성을 대라냥~ 순서대로 맞혀야 한다냥! 못 맞추면 마시는거다냥! 😼',                       tip:'예: ㅅㄱ → 사과, 수고다냥~' },
+  '10': { title:'📋 카테고리다냥!',          color:'#16A085', bg:'#E8F8F5', rule:'카테고리 정하고 순서대로 말하라냥~ 막히면 마시는거다냥! 🐾',                               tip:'예: 지하철역이다냥, 걸그룹이다냥...' },
+  'J' : { title:'📏 룰 메이커다냥!',         color:'#2471A3', bg:'#EBF5FB', rule:'새로운 룰을 만들어라냥~! 솜솜이가 지켜볼거다냥 👁️ 어기면 마시는거다냥!',                  tip:'창의적으로 만들라냥 🐾' },
+  'Q' : { title:'❓ 퀘스천 마스터다냥!',     color:'#7D3C98', bg:'#F5EEF8', rule:'솜솜이가 질문 마스터가 됐다냥~ 질문에 대답한 냥이가 마셔야 한다냥! 😸',                   tip:'다음 Q까지 유지된다냥 👑' },
+  'K' : { title:'👑 킹스컵이다냥!!!',        color:'#B7950B', bg:'#FFFDE7', rule:'가운데 컵에 원하는 만큼 따르라냥~ 네 번째 킹 뽑은 냥이가 원샷이다냥!!! 😱',             tip:'네 번째 킹은 각오하라냥 💀' },
+};
+
+function buildDeck() {
+  const d = [];
+  for (const s of SUITS) for (const r of RANKS) d.push({ suit: s, rank: r });
+  for (let i = d.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [d[i], d[j]] = [d[j], d[i]];
+  }
+  return d;
+}
+
+function catForCard(card) {
+  const idx = SUIT_ORDER.indexOf(card.suit) * 13 + RANKS.indexOf(card.rank);
+  return CAT_IMAGES[idx % CAT_IMAGES.length];
+}
+
+/* ── 상태 ── */
+const state = {
+  players: null,
+  setupNames: [],
+  turnIdx: 0,
+  deck: [],
+  drawnCount: 0,
+  kingsDrawn: 0,
+  lastKingPlayer: '',
+  currentCard: null,
+};
+
+/* ── DOM ── */
+const $ = (id) => document.getElementById(id);
+
+/* ── 카드 크기 계산 ── */
+function cardSize() {
+  const w = Math.min(window.innerWidth, 480);
+  const cw = Math.min(Math.floor((w - 100) / 2), 155);
+  return { cw, ch: Math.floor(cw * 1.45) };
+}
+function bigCardSize() {
+  const w = Math.min(window.innerWidth, 480);
+  const cw = Math.min(Math.floor(w * 0.42), 170);
+  return { cw, ch: Math.floor(cw * 1.45) };
+}
+
+/* ── 카드 렌더링 ── */
+function cardBackHTML(cw, ch, extraStyle) {
+  return `
+    <div class="card-back" style="width:${cw}px;height:${ch}px;${extraStyle || ''}">
+      <div class="inner" style="width:${cw - 12}px;height:${ch - 12}px;">
+        <div class="paw" style="font-size:${cw * 0.3}px">🐾</div>
+        <div class="suits" style="font-size:${cw * 0.11}px">♣ ♠ ♥ ♦</div>
+      </div>
+    </div>`;
+}
+
+function cardFaceHTML(card, cw, ch) {
+  const rule   = RULES[card.rank];
+  const corner = RED_SUITS.includes(card.suit) ? '#C0392B' : '#1a1a2e';
+  const cornerHTML = (cls) => `
+    <div class="corner ${cls}">
+      <span style="font-size:${cw * 0.15}px;font-weight:900;color:${corner}">${card.rank}</span>
+      <span style="font-size:${cw * 0.13}px;color:${corner}">${card.suit}</span>
+    </div>`;
+  return `
+    <div class="card-face" style="width:${cw}px;height:${ch}px;border:2.5px solid ${rule.color};background:${rule.bg};box-shadow:0 5px 10px ${rule.color}59;">
+      <img src="${catForCard(card)}" alt="솜솜이" draggable="false">
+      ${cornerHTML('tl')}
+      ${cornerHTML('br')}
+    </div>`;
+}
+
+/* ════ 설정 화면 ════ */
+function renderPlayerList() {
+  const list = $('player-list');
+  const names = state.setupNames;
+  list.innerHTML = names.map((p, i) => `
+    <div class="player-chip">
+      <span class="num">${i + 1}</span>
+      <span class="name">${escapeHTML(p)}</span>
+      <button class="remove" data-idx="${i}">✕</button>
+    </div>`).join('') +
+    (names.length < 2 ? '<p class="hint">최소 2명 이상 입력해 주세요</p>' : '');
+  list.querySelectorAll('.remove').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.setupNames.splice(Number(btn.dataset.idx), 1);
+      renderPlayerList();
+    });
+  });
+  $('start-btn').disabled = names.length < 2;
+}
+
+function escapeHTML(s) {
+  return s.replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+}
+
+function addPlayer() {
+  const input = $('name-input');
+  const name = input.value.trim();
+  if (!name || state.setupNames.includes(name)) return;
+  state.setupNames.push(name);
+  input.value = '';
+  input.focus();
+  renderPlayerList();
+}
+
+/* ════ 게임 로직 ════ */
+function startGame() {
+  state.players = [...state.setupNames];
+  state.turnIdx = 0;
+  state.deck = buildDeck();
+  state.drawnCount = 0;
+  state.kingsDrawn = 0;
+  state.currentCard = null;
+  state.lastKingPlayer = '';
+  $('setup').classList.add('hidden');
+  $('game').classList.remove('hidden');
+  renderGame();
+}
+
+function currentName() {
+  return state.players[state.turnIdx % state.players.length];
+}
+
+function drawCard() {
+  if (state.deck.length === 0) return;
+  const card = state.deck.shift();
+  state.currentCard = card;
+  state.drawnCount++;
+  if (card.rank === 'K') {
+    state.kingsDrawn++;
+    if (state.kingsDrawn === 4) state.lastKingPlayer = currentName();
+  }
+  openCardModal();
+  renderGame();
+}
+
+function closeCardModal() {
+  $('card-modal').classList.add('hidden');
+  state.turnIdx++;
+  renderGame();
+}
+
+function doReset() {
+  state.players = null;
+  $('confirm-modal').classList.add('hidden');
+  $('game').classList.add('hidden');
+  $('setup').classList.remove('hidden');
+  renderPlayerList();
+}
+
+/* ════ 렌더링 ════ */
+function renderGame() {
+  if (!state.players) return;
+  const { cw, ch } = cardSize();
+  const remaining = state.deck.length;
+
+  // 턴 배너
+  $('turn-name').textContent = `${currentName()} 🎲`;
+  $('turn-order').innerHTML = state.players.map((p, i) =>
+    `<span class="${i === state.turnIdx % state.players.length ? 'active' : 'inactive'}">${i > 0 ? '&nbsp;&nbsp;→&nbsp;&nbsp;' : ''}${escapeHTML(p)}</span>`
+  ).join('');
+
+  // 통계
+  $('stat-remaining').textContent = remaining;
+  $('stat-drawn').textContent = state.drawnCount;
+  $('kings-icons').textContent =
+    '👑'.repeat(state.kingsDrawn) + '🔲'.repeat(4 - state.kingsDrawn);
+
+  // 덱 팬
+  const deckArea = $('deck-area');
+  deckArea.style.width  = (cw + 44) + 'px';
+  deckArea.style.height = (ch + 44) + 'px';
+  if (remaining === 0) {
+    deckArea.innerHTML = `<div id="deck-empty"><div style="font-size:48px">🐱</div><div style="font-size:12px;color:#aaa;margin-top:8px">카드 없음!</div></div>`;
+    $('deck-hint').textContent = '';
+  } else {
+    const n = Math.min(8, remaining);
+    let html = '';
+    for (let i = 0; i < n; i++) {
+      const spread = Math.min(n - 1, 6);
+      const pct = spread > 0 ? i / spread : 0.5;
+      const angle = (pct - 0.5) * 26;
+      const tx = (pct - 0.5) * 16;
+      const ty = Math.abs(angle) * 0.22;
+      html += cardBackHTML(cw, ch, `transform:rotate(${angle}deg) translate(${tx}px,${ty}px);z-index:${i};`);
+    }
+    deckArea.innerHTML = html;
+    $('deck-hint').textContent = '탭해서 뽑기 👆';
+  }
+
+  // 마지막 카드
+  const lastArea = $('last-card-area');
+  if (state.currentCard) {
+    lastArea.innerHTML = cardFaceHTML(state.currentCard, cw, ch);
+    $('last-hint').textContent = '탭해서 다시보기';
+  } else {
+    lastArea.innerHTML = `<div id="empty-card" style="width:${cw}px;height:${ch}px">🃏</div>`;
+    $('last-hint').textContent = '';
+  }
+
+  // 구분선 & 버튼
+  $('v-divider').style.height = (ch * 0.8) + 'px';
+  const drawBtn = $('draw-btn');
+  drawBtn.disabled = remaining === 0;
+  drawBtn.textContent = remaining === 0 ? '카드 없음 🐱' : `🃏  ${currentName()} 차례!`;
+}
+
+function openCardModal() {
+  const card = state.currentCard;
+  const rule = RULES[card.rank];
+  const { cw, ch } = bigCardSize();
+
+  $('modal-card-area').innerHTML = cardFaceHTML(card, cw, ch);
+  $('modal-card-area').style.background = rule.bg;
+  $('modal-card-area').style.borderBottomColor = rule.color;
+  $('modal-title').textContent = rule.title;
+  $('modal-title').style.color = rule.color;
+  $('modal-rule').textContent = rule.rule;
+  $('modal-tip-box').style.background = rule.bg;
+  $('modal-tip-box').style.borderLeftColor = rule.color;
+  $('modal-tip').textContent = '💡 ' + rule.tip;
+  $('modal-tip').style.color = rule.color;
+
+  const badge = $('king-badge');
+  if (card.rank === 'K') {
+    const isLastKing = state.kingsDrawn === 4;
+    badge.textContent = isLastKing
+      ? `💀 ${state.lastKingPlayer}냥!! 킹스컵 원샷이다냥!!!`
+      : `👑 ${state.kingsDrawn} / 4번째 킹이냥~`;
+    badge.style.background = rule.color;
+    badge.classList.remove('hidden');
+  } else {
+    badge.classList.add('hidden');
+  }
+
+  $('confirm-card-btn').style.background = rule.color;
+
+  const box = $('modal-box');
+  box.classList.remove('pop');
+  void box.offsetWidth; // 애니메이션 재시작
+  box.classList.add('pop');
+  $('card-modal').classList.remove('hidden');
+}
+
+/* ════ 룰북 ════ */
+function renderRulebook() {
+  $('rules-list').innerHTML = RANKS.map(r => {
+    const rl = RULES[r];
+    return `
+      <div class="rule-row">
+        <div class="rule-badge" style="background:${rl.color}">${r}</div>
+        <div>
+          <div class="title">${rl.title}</div>
+          <div class="body">${rl.rule}</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+/* ════ 이벤트 바인딩 ════ */
+$('add-btn').addEventListener('click', addPlayer);
+$('name-input').addEventListener('keydown', e => { if (e.key === 'Enter') addPlayer(); });
+$('start-btn').addEventListener('click', startGame);
+
+$('deck-area').addEventListener('click', drawCard);
+$('draw-btn').addEventListener('click', drawCard);
+$('last-card-area').addEventListener('click', () => {
+  if (state.currentCard) openCardModal();
+});
+
+$('card-modal').addEventListener('click', closeCardModal);
+$('modal-box').addEventListener('click', e => e.stopPropagation());
+$('confirm-card-btn').addEventListener('click', closeCardModal);
+
+$('reset-btn').addEventListener('click', () => $('confirm-modal').classList.remove('hidden'));
+$('cancel-reset').addEventListener('click', () => $('confirm-modal').classList.add('hidden'));
+$('ok-reset').addEventListener('click', doReset);
+
+$('rules-btn').addEventListener('click', () => $('rules-modal').classList.remove('hidden'));
+$('rules-close').addEventListener('click', () => $('rules-modal').classList.add('hidden'));
+$('rules-modal').addEventListener('click', e => {
+  if (e.target === $('rules-modal')) $('rules-modal').classList.add('hidden');
+});
+
+window.addEventListener('resize', renderGame);
+
+/* 초기화 */
+renderRulebook();
+renderPlayerList();
+</script>
+</body>
+</html>
