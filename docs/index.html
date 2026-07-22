@@ -139,6 +139,15 @@
     background: #fff; border-radius: 18px; padding: 16px 18px;
     border: 2px solid #FF6B6B; font-size: 20px;
   }
+  #restart-btn {
+    flex: 1; background: #FF6B9D; border-radius: 18px; padding: 16px;
+    color: #fff; font-size: 16px; font-weight: 900;
+    box-shadow: 0 5px 10px rgba(255,107,157,0.4);
+  }
+  #setup-btn {
+    flex: 1; background: #fff; border-radius: 18px; padding: 16px;
+    border: 2px solid #FF6B9D; color: #FF6B9D; font-size: 16px; font-weight: 900;
+  }
 
   /* ═══ 모달 공통 ═══ */
   .overlay {
@@ -278,9 +287,13 @@
       </div>
     </div>
 
-    <div class="btn-row">
+    <div class="btn-row" id="play-btn-row">
       <button id="draw-btn"></button>
       <button id="reset-btn">🔄</button>
+    </div>
+    <div class="btn-row hidden" id="gameover-btn-row">
+      <button id="restart-btn">🔄 재시작</button>
+      <button id="setup-btn">👥 플레이어 설정</button>
     </div>
   </div>
 
@@ -379,6 +392,7 @@ const state = {
   kingsDrawn: 0,
   lastKingPlayer: '',
   currentCard: null,
+  gameOver: false,
 };
 
 /* ── DOM ── */
@@ -460,14 +474,26 @@ function addPlayer() {
 /* ════ 게임 로직 ════ */
 function startGame() {
   state.players = [...state.setupNames];
-  state.turnIdx = 0;
+  resetRound(0);
+  $('setup').classList.add('hidden');
+  $('game').classList.remove('hidden');
+  renderGame();
+}
+
+function resetRound(startIdx) {
+  state.turnIdx = startIdx;
   state.deck = buildDeck();
   state.drawnCount = 0;
   state.kingsDrawn = 0;
   state.currentCard = null;
   state.lastKingPlayer = '';
-  $('setup').classList.add('hidden');
-  $('game').classList.remove('hidden');
+  state.gameOver = false;
+}
+
+/* 재시작: 4번째 킹 뽑은 사람부터 시작 */
+function restartGame() {
+  const startIdx = Math.max(0, state.players.indexOf(state.lastKingPlayer));
+  resetRound(startIdx);
   renderGame();
 }
 
@@ -476,13 +502,16 @@ function currentName() {
 }
 
 function drawCard() {
-  if (state.deck.length === 0) return;
+  if (state.gameOver || state.deck.length === 0) return;
   const card = state.deck.shift();
   state.currentCard = card;
   state.drawnCount++;
   if (card.rank === 'K') {
     state.kingsDrawn++;
-    if (state.kingsDrawn === 4) state.lastKingPlayer = currentName();
+    if (state.kingsDrawn === 4) {
+      state.lastKingPlayer = currentName();
+      state.gameOver = true; // 4번째 킹 → 게임 종료
+    }
   }
   openCardModal();
   renderGame();
@@ -490,7 +519,7 @@ function drawCard() {
 
 function closeCardModal() {
   $('card-modal').classList.add('hidden');
-  state.turnIdx++;
+  if (!state.gameOver) state.turnIdx++;
   renderGame();
 }
 
@@ -509,10 +538,17 @@ function renderGame() {
   const remaining = state.deck.length;
 
   // 턴 배너
-  $('turn-name').textContent = `${currentName()} 🎲`;
-  $('turn-order').innerHTML = state.players.map((p, i) =>
-    `<span class="${i === state.turnIdx % state.players.length ? 'active' : 'inactive'}">${i > 0 ? '&nbsp;&nbsp;→&nbsp;&nbsp;' : ''}${escapeHTML(p)}</span>`
-  ).join('');
+  if (state.gameOver) {
+    document.querySelector('.turn-banner .label').textContent = '게임 종료!';
+    $('turn-name').textContent = `💀 ${state.lastKingPlayer} 원샷이다냥!`;
+    $('turn-order').innerHTML = '<span class="active">👑 4번째 킹이 나왔다냥~ 수고했다냥! 🐾</span>';
+  } else {
+    document.querySelector('.turn-banner .label').textContent = '지금 차례';
+    $('turn-name').textContent = `${currentName()} 🎲`;
+    $('turn-order').innerHTML = state.players.map((p, i) =>
+      `<span class="${i === state.turnIdx % state.players.length ? 'active' : 'inactive'}">${i > 0 ? '&nbsp;&nbsp;→&nbsp;&nbsp;' : ''}${escapeHTML(p)}</span>`
+    ).join('');
+  }
 
   // 통계
   $('stat-remaining').textContent = remaining;
@@ -524,7 +560,10 @@ function renderGame() {
   const deckArea = $('deck-area');
   deckArea.style.width  = (cw + 44) + 'px';
   deckArea.style.height = (ch + 44) + 'px';
-  if (remaining === 0) {
+  if (state.gameOver) {
+    deckArea.innerHTML = `<div id="deck-empty"><div style="font-size:48px">👑</div><div style="font-size:12px;color:#aaa;margin-top:8px">게임 종료다냥!</div></div>`;
+    $('deck-hint').textContent = '';
+  } else if (remaining === 0) {
     deckArea.innerHTML = `<div id="deck-empty"><div style="font-size:48px">🐱</div><div style="font-size:12px;color:#aaa;margin-top:8px">카드 없음!</div></div>`;
     $('deck-hint').textContent = '';
   } else {
@@ -554,9 +593,13 @@ function renderGame() {
 
   // 구분선 & 버튼
   $('v-divider').style.height = (ch * 0.8) + 'px';
-  const drawBtn = $('draw-btn');
-  drawBtn.disabled = remaining === 0;
-  drawBtn.textContent = remaining === 0 ? '카드 없음 🐱' : `🃏  ${currentName()} 차례!`;
+  $('play-btn-row').classList.toggle('hidden', state.gameOver);
+  $('gameover-btn-row').classList.toggle('hidden', !state.gameOver);
+  if (!state.gameOver) {
+    const drawBtn = $('draw-btn');
+    drawBtn.disabled = remaining === 0;
+    drawBtn.textContent = remaining === 0 ? '카드 없음 🐱' : `🃏  ${currentName()} 차례!`;
+  }
 }
 
 function openCardModal() {
@@ -627,6 +670,8 @@ $('modal-box').addEventListener('click', e => e.stopPropagation());
 $('confirm-card-btn').addEventListener('click', closeCardModal);
 
 $('reset-btn').addEventListener('click', () => $('confirm-modal').classList.remove('hidden'));
+$('restart-btn').addEventListener('click', restartGame);
+$('setup-btn').addEventListener('click', doReset);
 $('cancel-reset').addEventListener('click', () => $('confirm-modal').classList.add('hidden'));
 $('ok-reset').addEventListener('click', doReset);
 
